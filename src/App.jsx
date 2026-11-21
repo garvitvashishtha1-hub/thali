@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { foods } from "./foods";
+import { foods, categories } from "./foods";
 
 const MEALS = ["Breakfast", "Lunch", "Snack", "Dinner"];
 const today = () => new Date().toDateString();
@@ -41,6 +41,8 @@ export default function App() {
   });
   const [meal, setMeal] = useState("Breakfast");
   const [query, setQuery] = useState("");
+  const [cat, setCat] = useState("All");
+  const [limit, setLimit] = useState(12);
 
   useEffect(() => save("thali-profile", profile), [profile]);
   useEffect(() => save("thali-log", { day: today(), items: log }), [log]);
@@ -76,9 +78,12 @@ export default function App() {
   const C = 2 * Math.PI * R;
   const pct = Math.min(1, protein / (profile.protein || 1));
 
-  const results = foods.filter((f) =>
-    f.name.toLowerCase().includes(query.trim().toLowerCase())
+  const matches = foods.filter(
+    (f) =>
+      (cat === "All" || f.category === cat) &&
+      f.name.toLowerCase().includes(query.trim().toLowerCase())
   );
+  const results = matches.slice(0, limit);
   const best = [...foods]
     .filter((f) => f.protein >= 5)
     .sort((a, b) => b.protein / b.kcal - a.protein / a.kcal)
@@ -162,6 +167,7 @@ export default function App() {
 
       <section className="card">
         <h2>Add food</h2>
+        <h3>Add to</h3>
         <div className="chips">
           {MEALS.map((m) => (
             <button
@@ -174,14 +180,27 @@ export default function App() {
             </button>
           ))}
         </div>
+        <h3>Browse</h3>
+        <div className="cats">
+          {categories.map((c) => (
+            <button
+              key={c}
+              className={"chip" + (c === cat ? " on" : "")}
+              aria-pressed={c === cat}
+              onClick={() => { setCat(c); setLimit(12); }}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
         <input
           className="search"
           type="search"
           placeholder="Search dal, paneer, roti..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => { setQuery(e.target.value); setLimit(12); }}
         />
-        {results.length === 0 && <p>No match. Try "dal" or "paneer".</p>}
+        {matches.length === 0 && <p>No match. Try "dal" or "paneer".</p>}
         {results.map((f) => (
           <div className="food" key={f.name}>
             <div>
@@ -194,6 +213,11 @@ export default function App() {
             </span>
           </div>
         ))}
+        {matches.length > limit && (
+          <button className="more" onClick={() => setLimit(limit + 12)}>
+            Show more ({matches.length - limit} left)
+          </button>
+        )}
       </section>
 
       <section className="card">
