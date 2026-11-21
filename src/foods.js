@@ -1,0 +1,21 @@
+// name, serving, kcal, protein (g), carbs (g), fat (g)
+export const foods = [
+  { name: "Roti (phulka)", serving: "1 roti", kcal: 100, protein: 3.2, carbs: 20, fat: 0.8 },
+  { name: "Steamed rice", serving: "1 katori", kcal: 195, protein: 4, carbs: 43, fat: 0.4 },
+  { name: "Dal tadka", serving: "1 katori", kcal: 150, protein: 8, carbs: 20, fat: 4 },
+  { name: "Moong dal", serving: "1 katori", kcal: 130, protein: 9, carbs: 19, fat: 2 },
+  { name: "Rajma", serving: "1 katori", kcal: 180, protein: 9, carbs: 28, fat: 3 },
+  { name: "Chole", serving: "1 katori", kcal: 200, protein: 9, carbs: 28, fat: 6 },
+  { name: "Paneer bhurji", serving: "1 katori", kcal: 250, protein: 15, carbs: 5, fat: 19 },
+  { name: "Palak paneer", serving: "1 katori", kcal: 220, protein: 11, carbs: 8, fat: 16 },
+  { name: "Soya chunks (dry)", serving: "30 g", kcal: 104, protein: 15, carbs: 10, fat: 0.4 },
+  { name: "Dahi (curd)", serving: "1 katori", kcal: 60, protein: 3.5, carbs: 5, fat: 3 },
+  { name: "Milk (toned)", serving: "1 glass", kcal: 135, protein: 8, carbs: 12, fat: 6 },
+  { name: "Besan chilla", serving: "1 chilla", kcal: 110, protein: 6, carbs: 13, fat: 4 },
+  { name: "Sprouts salad", serving: "1 katori", kcal: 100, protein: 7, carbs: 16, fat: 1 },
+  { name: "Poha", serving: "1 plate", kcal: 250, protein: 5, carbs: 40, fat: 8 },
+  { name: "Idli", serving: "2 idli", kcal: 80, protein: 4, carbs: 16, fat: 0.4 },
+  { name: "Roasted chana", serving: "30 g", kcal: 110, protein: 6, carbs: 18, fat: 2 },
+  { name: "Peanuts", serving: "30 g", kcal: 170, protein: 8, carbs: 5, fat: 15 },
+  { name: "Sattu drink", serving: "1 glass", kcal: 120, protein: 6.5, carbs: 19, fat: 1.5 },
+];
