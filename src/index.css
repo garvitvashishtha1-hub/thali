@@ -537,3 +537,27 @@ body, .card, .chip, .search, .grid input, .grid select, .more, .install,
 .w-next:disabled { opacity: 0.4; cursor: default; }
 .w-next:active { transform: scale(0.95); }
 @media (prefers-reduced-motion: reduce) { .w-body { animation: none; } }
+
+/* ---------- Custom foods ---------- */
+.own-btn {
+  width: 100%;
+  margin: 4px 0 8px;
+  padding: 10px;
+  border: 1px dashed var(--leaf);
+  background: transparent;
+  color: var(--leaf);
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.own-btn:active { transform: scale(0.97); }
+.own-form {
+  margin: 8px 0 14px;
+  padding: 12px;
+  background: var(--field);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.own-form input { background: var(--card); }
+.own-form .note { margin: 0; }

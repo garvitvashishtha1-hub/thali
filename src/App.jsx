@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { foods, categories } from "./foods";
 
 const MEALS = ["Breakfast", "Lunch", "Snack", "Dinner"];
+const EMPTY_DRAFT = { name: "", serving: "1 katori", kcal: "", protein: "", carbs: "", fat: "" };
 const today = () => new Date().toDateString();
 const r1 = (x) => Math.round(x * 10) / 10;
 
@@ -217,6 +218,10 @@ export default function App() {
   const [cat, setCat] = useState("All");
   const [limit, setLimit] = useState(12);
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
+  const [custom, setCustom] = useState(() => load("thali-custom", []));
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [formError, setFormError] = useState("");
   const [ready, setReady] = useState(false);
   const [welcomed, setWelcomed] = useState(() => load("thali-welcomed", false));
   const [showSplash, setShowSplash] = useState(
@@ -239,6 +244,7 @@ export default function App() {
 
   useEffect(() => save("thali-profile", profile), [profile]);
   useEffect(() => save("thali-log", { day: today(), items: log }), [log]);
+  useEffect(() => save("thali-custom", custom), [custom]);
 
   useEffect(() => {
     const onPrompt = (e) => {
@@ -272,6 +278,44 @@ export default function App() {
   const isDark =
     theme === "dark" ||
     (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  const allFoods = [...custom, ...foods];
+  const setD = (key) => (e) => setDraft({ ...draft, [key]: e.target.value });
+
+  function saveCustom() {
+    const name = draft.name.trim();
+    const kcal = Number(draft.kcal);
+    const protein = Number(draft.protein);
+    if (!name) return setFormError("Give your food a name.");
+    if (allFoods.some((f) => f.name.toLowerCase() === name.toLowerCase()))
+      return setFormError("A food with this name already exists. Try a different name.");
+    if (draft.kcal === "" || !(kcal >= 0)) return setFormError("Enter the calories (kcal) for one serving.");
+    if (draft.protein === "" || !(protein >= 0)) return setFormError("Enter the protein in grams for one serving.");
+    if (kcal > 3000 || protein > 200) return setFormError("Those numbers look too high for one serving. Please check them.");
+    const food = {
+      name,
+      serving: draft.serving.trim() || "1 serving",
+      kcal,
+      protein,
+      carbs: Number(draft.carbs) || 0,
+      fat: Number(draft.fat) || 0,
+      category: "My foods",
+      custom: true,
+    };
+    setCustom((prev) => [food, ...prev]);
+    setDraft(EMPTY_DRAFT);
+    setFormError("");
+    setAdding(false);
+    setCat("My foods");
+    setQuery("");
+    setLimit(12);
+  }
+
+  function deleteCustom(name) {
+    if (!window.confirm(`Delete "${name}" from My foods?`)) return;
+    setCustom((prev) => prev.filter((f) => f.name !== name));
+    if (custom.length <= 1 && cat === "My foods") setCat("All");
+  }
 
   async function installApp() {
     if (!installEvt) return;
@@ -316,13 +360,16 @@ export default function App() {
   const C = 2 * Math.PI * R;
   const pct = Math.min(1, protein / (profile.protein || 1));
 
-  const matches = foods.filter(
+  const cats = custom.length
+    ? [categories[0], "My foods", ...categories.slice(1)]
+    : categories;
+  const matches = allFoods.filter(
     (f) =>
       (cat === "All" || f.category === cat) &&
       f.name.toLowerCase().includes(query.trim().toLowerCase())
   );
   const results = matches.slice(0, limit);
-  const best = [...foods]
+  const best = [...allFoods]
     .filter((f) => f.protein >= 5)
     .sort((a, b) => b.protein / b.kcal - a.protein / a.kcal)
     .slice(0, 5);
@@ -473,7 +520,7 @@ export default function App() {
         </div>
         <h3>Browse</h3>
         <div className="cats">
-          {categories.map((c) => (
+          {cats.map((c) => (
             <button
               key={c}
               className={"chip" + (c === cat ? " on" : "")}
@@ -491,7 +538,49 @@ export default function App() {
           value={query}
           onChange={(e) => { setQuery(e.target.value); setLimit(12); }}
         />
-        {matches.length === 0 && <p>No match. Try "dal" or "paneer".</p>}
+        <button className="own-btn" onClick={() => { setAdding(!adding); setFormError(""); }}>
+          {adding ? "Cancel" : "+ Add your own food"}
+        </button>
+        {adding && (
+          <div className="grid own-form">
+            <label className="wide">
+              Food name
+              <input type="text" maxLength={40} placeholder="e.g. Mom's dal" value={draft.name} onChange={setD("name")} />
+            </label>
+            <label className="wide">
+              One serving is
+              <input type="text" maxLength={30} placeholder="e.g. 1 katori" value={draft.serving} onChange={setD("serving")} />
+            </label>
+            <label>
+              Calories (kcal)
+              <input type="number" min="0" inputMode="decimal" value={draft.kcal} onChange={setD("kcal")} />
+            </label>
+            <label>
+              Protein (g)
+              <input type="number" min="0" inputMode="decimal" value={draft.protein} onChange={setD("protein")} />
+            </label>
+            <label>
+              Carbs (g, optional)
+              <input type="number" min="0" inputMode="decimal" value={draft.carbs} onChange={setD("carbs")} />
+            </label>
+            <label>
+              Fat (g, optional)
+              <input type="number" min="0" inputMode="decimal" value={draft.fat} onChange={setD("fat")} />
+            </label>
+            {formError && <p className="w-warn wide">{formError}</p>}
+            <p className="note wide">
+              Tip: check the packet label, or pick the closest food in the list and adjust it.
+            </p>
+            <button className="w-next wide" onClick={saveCustom}>Save food</button>
+          </div>
+        )}
+        {matches.length === 0 && (
+          <p>
+            {cat === "My foods"
+              ? "You haven't added any foods yet."
+              : 'No match. Try "dal" or "paneer".'}
+          </p>
+        )}
         {results.map((f) => (
           <div className="food" key={f.name}>
             <div>
@@ -501,6 +590,11 @@ export default function App() {
             <span>
               <span className="protein">{f.protein} g</span>
               <button className="add" onClick={() => addFood(f)}>Add to {meal}</button>
+              {f.custom && (
+                <button className="x" onClick={() => deleteCustom(f.name)} aria-label={"Delete " + f.name}>
+                  ×
+                </button>
+              )}
             </span>
           </div>
         ))}
