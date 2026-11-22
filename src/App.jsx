@@ -46,6 +46,104 @@ function dailyMessage(protein, target, hasLog) {
   return "Just getting started. Dal, paneer or soya at your next meal will help.";
 }
 
+const GOALS = [
+  ["lose", "Lose fat", "A small calorie deficit with high protein"],
+  ["maintain", "Stay healthy", "Balanced calories and steady protein"],
+  ["build", "Build muscle", "Extra calories and the most protein"],
+];
+
+function Welcome({ initial, onDone }) {
+  const [step, setStep] = useState(0);
+  const [name, setName] = useState(initial.name || "");
+  const [weight, setWeight] = useState(initial.weight || 60);
+  const [goal, setGoal] = useState(initial.goal || "maintain");
+  const w = Number(weight);
+  const validWeight = w >= 25 && w <= 200;
+  const t = calcTargets(validWeight ? w : 60, goal);
+
+  function finish(skip) {
+    onDone({
+      ...initial,
+      name: skip ? initial.name || "" : name.trim(),
+      weight: skip || !validWeight ? initial.weight || 60 : w,
+      goal: skip ? initial.goal || "maintain" : goal,
+      ...(skip ? { kcal: initial.kcal, protein: initial.protein } : t),
+    });
+  }
+
+  return (
+    <main className="welcome">
+      <div className="w-body" key={step}>
+        {step === 0 && (
+          <>
+            <h1 className="w-title">Protein, the home-cooked way.</h1>
+            <p className="w-text">
+              Thali tracks calories and protein for the food you actually eat:
+              roti, dal, sabzi, paneer. No powders or supplements needed.
+            </p>
+            <ul className="w-list">
+              <li>150+ Indian vegetarian foods</li>
+              <li>Targets made for your body</li>
+              <li>Free, private and works offline</li>
+            </ul>
+          </>
+        )}
+        {step === 1 && (
+          <>
+            <h1 className="w-title">Let's set you up</h1>
+            <label className="w-label">
+              What should we call you? (optional)
+              <input className="search" type="text" maxLength={20} value={name}
+                onChange={(e) => setName(e.target.value)} placeholder="Your name" />
+            </label>
+            <label className="w-label">
+              Body weight (kg)
+              <input className="search" type="number" min="25" max="200" value={weight}
+                onChange={(e) => setWeight(e.target.value)} />
+            </label>
+            {!validWeight && <p className="w-warn">Enter a weight between 25 and 200 kg.</p>}
+            <div className="w-label">Your goal</div>
+            {GOALS.map(([id, title, text]) => (
+              <button key={id} className={"goal-card" + (goal === id ? " on" : "")}
+                aria-pressed={goal === id} onClick={() => setGoal(id)}>
+                <b>{title}</b>
+                <small>{text}</small>
+              </button>
+            ))}
+          </>
+        )}
+        {step === 2 && (
+          <>
+            <h1 className="w-title">{name.trim() ? `All set, ${name.trim()}` : "All set"}</h1>
+            <p className="w-text">Here are your daily targets.</p>
+            <div className="w-big">
+              <div className="tile"><b>{t.protein} g</b>protein</div>
+              <div className="tile"><b>{t.kcal}</b>kcal</div>
+            </div>
+            <p className="note">
+              These are general estimates, not medical advice. You can change them
+              any time under Your targets.
+            </p>
+          </>
+        )}
+      </div>
+      <div className="w-foot">
+        <div className="dots" aria-hidden="true">
+          {[0, 1, 2].map((i) => <span key={i} className={i === step ? "on" : ""} />)}
+        </div>
+        <div>
+          {step < 2 && <button className="w-link" onClick={() => finish(true)}>Skip</button>}
+          {step > 0 && <button className="w-link" onClick={() => setStep(step - 1)}>Back</button>}
+          <button className="w-next" disabled={step === 1 && !validWeight}
+            onClick={() => (step < 2 ? setStep(step + 1) : finish(false))}>
+            {step < 2 ? "Next" : "Start tracking"}
+          </button>
+        </div>
+      </div>
+    </main>
+  );
+}
+
 function Splash({ onDone }) {
   const [leaving, setLeaving] = useState(false);
 
@@ -108,7 +206,7 @@ function ThemeIcon({ sun }) {
 
 export default function App() {
   const [profile, setProfile] = useState(() =>
-    load("thali-profile", { weight: 60, goal: "maintain", ...calcTargets(60, "maintain") })
+    load("thali-profile", { name: "", weight: 60, goal: "maintain", ...calcTargets(60, "maintain") })
   );
   const [log, setLog] = useState(() => {
     const s = load("thali-log", null);
@@ -120,6 +218,7 @@ export default function App() {
   const [limit, setLimit] = useState(12);
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
   const [ready, setReady] = useState(false);
+  const [welcomed, setWelcomed] = useState(() => load("thali-welcomed", false));
   const [showSplash, setShowSplash] = useState(() => {
     const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const last = load("thali-splash", 0);
@@ -131,9 +230,10 @@ export default function App() {
       save("thali-splash", Date.now());
       return;
     }
+    if (!welcomed) return;
     const id = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(id);
-  }, [showSplash]);
+  }, [showSplash, welcomed]);
   const [installEvt, setInstallEvt] = useState(null);
   const [installed, setInstalled] = useState(
     () =>
@@ -235,6 +335,18 @@ export default function App() {
 
   if (showSplash) return <Splash onDone={setShowSplash} />;
 
+  if (!welcomed)
+    return (
+      <Welcome
+        initial={profile}
+        onDone={(p) => {
+          setProfile(p);
+          setWelcomed(true);
+          save("thali-welcomed", true);
+        }}
+      />
+    );
+
   return (
     <main className="app">
       <div className="head">
@@ -251,7 +363,10 @@ export default function App() {
         <p className="date">
           {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
         </p>
-        <h2 className="greet">{greetingFor(new Date().getHours())}</h2>
+        <h2 className="greet">
+          {greetingFor(new Date().getHours())}
+          {profile.name ? `, ${profile.name}` : ""}
+        </h2>
         <p className="tip">{dailyMessage(protein, profile.protein, log.length > 0)}</p>
       </div>
 
@@ -405,6 +520,15 @@ export default function App() {
       <section className="card">
         <h2>Your targets</h2>
         <div className="grid">
+          <label className="wide">
+            Your name
+            <input
+              type="text"
+              maxLength={20}
+              value={profile.name || ""}
+              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+            />
+          </label>
           <label>
             Body weight (kg)
             <input
