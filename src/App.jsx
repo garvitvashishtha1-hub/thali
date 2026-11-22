@@ -31,6 +31,31 @@ function calcTargets(weight, goal) {
   };
 }
 
+function ThemeIcon({ sun }) {
+  return (
+    <svg
+      className={"theme-icon" + (sun ? " is-sun" : "")}
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      aria-hidden="true"
+    >
+      <mask id="thali-moon-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="24" height="24">
+        <rect x="0" y="0" width="24" height="24" fill="#fff" />
+        <circle className="moon-cut" cx="17" cy="7" r="7.5" fill="#000" />
+      </mask>
+      <g mask="url(#thali-moon-mask)">
+        <circle className="sun-core" cx="12" cy="12" r="9" fill="currentColor" />
+      </g>
+      <g className="sun-rays" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => (
+          <line key={deg} x1="12" y1="1.5" x2="12" y2="4" transform={`rotate(${deg} 12 12)`} />
+        ))}
+      </g>
+    </svg>
+  );
+}
+
 export default function App() {
   const [profile, setProfile] = useState(() =>
     load("thali-profile", { weight: 60, goal: "maintain", ...calcTargets(60, "maintain") })
@@ -43,9 +68,63 @@ export default function App() {
   const [query, setQuery] = useState("");
   const [cat, setCat] = useState("All");
   const [limit, setLimit] = useState(12);
+  const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
+  const [installEvt, setInstallEvt] = useState(null);
+  const [installed, setInstalled] = useState(
+    () =>
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+  );
+  const [hideInstall, setHideInstall] = useState(() => load("thali-hide-install", false));
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
 
   useEffect(() => save("thali-profile", profile), [profile]);
   useEffect(() => save("thali-log", { day: today(), items: log }), [log]);
+
+  useEffect(() => {
+    const onPrompt = (e) => {
+      e.preventDefault();
+      setInstallEvt(e);
+    };
+    const onInstalled = () => {
+      setInstalled(true);
+      setInstallEvt(null);
+    };
+    window.addEventListener("beforeinstallprompt", onPrompt);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", onPrompt);
+      window.removeEventListener("appinstalled", onInstalled);
+    };
+  }, []);
+
+  useEffect(() => {
+    save("thali-theme", theme);
+    const root = document.documentElement;
+    if (theme === "auto") root.removeAttribute("data-theme");
+    else root.dataset.theme = theme;
+    const dark =
+      theme === "dark" ||
+      (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", dark ? "#141a16" : "#2f7d4f");
+  }, [theme]);
+
+  const isDark =
+    theme === "dark" ||
+    (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  async function installApp() {
+    if (!installEvt) return;
+    installEvt.prompt();
+    await installEvt.userChoice;
+    setInstallEvt(null);
+  }
+
+  function hideBanner() {
+    setHideInstall(true);
+    save("thali-hide-install", true);
+  }
 
   function changeBody(patch) {
     const next = { ...profile, ...patch };
@@ -91,8 +170,38 @@ export default function App() {
 
   return (
     <main className="app">
-      <h1>Thali</h1>
+      <div className="head">
+        <h1>Thali</h1>
+        <button
+          className="theme-btn"
+          onClick={() => setTheme(isDark ? "light" : "dark")}
+          aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+        >
+          <ThemeIcon sun={isDark} />
+        </button>
+      </div>
       <p>Protein and calories for home-cooked veg food.</p>
+
+      {!installed && !hideInstall && (installEvt || isIOS) && (
+        <section className="card install">
+          <div>
+            <b>Install Thali</b>
+            <p className="hint">
+              {installEvt
+                ? "Add it to your home screen. It opens full screen and works offline."
+                : "In Safari, tap the Share icon, then Add to Home Screen."}
+            </p>
+          </div>
+          <div className="install-actions">
+            {installEvt && (
+              <button className="install-btn" onClick={installApp}>
+                Install app
+              </button>
+            )}
+            <button className="x" onClick={hideBanner} aria-label="Dismiss">×</button>
+          </div>
+        </section>
+      )}
 
       <section className="card today">
         <div className="ring">

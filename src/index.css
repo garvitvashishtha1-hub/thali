@@ -1,7 +1,27 @@
+:root {
+  color-scheme: light;
+  --bg: #f2f5ef; --card: #ffffff; --ink: #1f2a24; --mute: #66736b;
+  --line: #dde4d9; --chip: #e8efe4; --field: #f7f9f5;
+  --prot: #a32c5b; --leaf: #2f7d4f; --cal: #e0a100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #141a16; --card: #1d2620; --ink: #eef3ec; --mute: #9aa99f;
+    --line: #2e3a32; --chip: #26332b; --field: #232e27;
+    --prot: #ee7fae; --leaf: #6fcf97; --cal: #f0b82a;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #141a16; --card: #1d2620; --ink: #eef3ec; --mute: #9aa99f;
+  --line: #2e3a32; --chip: #26332b; --field: #232e27;
+  --prot: #ee7fae; --leaf: #6fcf97; --cal: #f0b82a;
+}
 body {
   margin: 0;
-  background: #f2f5ef;
-  color: #1f2a24;
+  background: var(--bg);
+  color: var(--ink);
   font-family: system-ui, sans-serif;
 }
 .app {
@@ -11,12 +31,12 @@ body {
 }
 h3 {
   font-size: 0.9rem;
-  color: #66736b;
+  color: var(--mute);
   margin: 12px 0 2px;
 }
 .card {
-  background: #fff;
-  border: 1px solid #dde4d9;
+  background: var(--card);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 16px;
   margin-bottom: 14px;
@@ -31,10 +51,10 @@ h3 {
   width: 100%;
   box-sizing: border-box;
   padding: 10px 12px;
-  border: 1px solid #dde4d9;
+  border: 1px solid var(--line);
   border-radius: 12px;
   font-size: 1rem;
-  background: #f7f9f5;
+  background: var(--field);
   color: inherit;
 }
 .search {
@@ -46,14 +66,14 @@ h3 {
   align-items: center;
   gap: 10px;
   padding: 10px 4px;
-  border-bottom: 1px solid #dde4d9;
+  border-bottom: 1px solid var(--line);
 }
 .food small {
   display: block;
-  color: #66736b;
+  color: var(--mute);
 }
 .protein {
-  color: #a32c5b;
+  color: var(--prot);
   font-weight: 600;
 }
 .today {
@@ -72,12 +92,12 @@ h3 {
 }
 .ring-bg {
   fill: none;
-  stroke: #e8efe4;
+  stroke: var(--chip);
   stroke-width: 14;
 }
 .ring-fill {
   fill: none;
-  stroke: #a32c5b;
+  stroke: var(--prot);
   stroke-width: 14;
   stroke-linecap: round;
   transition: stroke-dashoffset 0.5s;
@@ -92,15 +112,15 @@ h3 {
 }
 .ring-text b {
   font-size: 2rem;
-  color: #a32c5b;
+  color: var(--prot);
   line-height: 1;
 }
 .ring-text span {
   font-size: 0.75rem;
-  color: #66736b;
+  color: var(--mute);
 }
 .hint {
-  color: #66736b;
+  color: var(--mute);
   margin: 6px 0 0;
 }
 .chips {
@@ -109,8 +129,8 @@ h3 {
   gap: 6px;
 }
 .chip {
-  border: 1px solid #dde4d9;
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--card);
   border-radius: 20px;
   padding: 6px 12px;
   font-size: 0.85rem;
@@ -118,15 +138,15 @@ h3 {
   cursor: pointer;
 }
 .chip.on {
-  background: #1f2a24;
-  color: #fff;
-  border-color: #1f2a24;
+  background: var(--ink);
+  color: var(--bg);
+  border-color: var(--ink);
 }
 .add {
   margin-left: 10px;
   padding: 5px 12px;
-  border: 1px solid #2f7d4f;
-  color: #2f7d4f;
+  border: 1px solid var(--leaf);
+  color: var(--leaf);
   background: transparent;
   border-radius: 10px;
   font-weight: 600;
@@ -140,8 +160,8 @@ h3 {
 .stepper button {
   width: 30px;
   height: 30px;
-  border: 1px solid #dde4d9;
-  background: #fff;
+  border: 1px solid var(--line);
+  background: var(--card);
   border-radius: 50%;
   font-size: 1.1rem;
   cursor: pointer;
@@ -154,21 +174,21 @@ h3 {
 }
 .grid label {
   font-size: 0.8rem;
-  color: #66736b;
+  color: var(--mute);
 }
 .grid input,
 .grid select {
   margin-top: 4px;
 }
 .note {
-  color: #66736b;
+  color: var(--mute);
   font-size: 0.78rem;
   margin: 14px 0 0;
 }
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid #e0a100;
+  outline: 3px solid var(--cal);
   outline-offset: 2px;
 }
 @media (max-width: 420px) {
@@ -199,10 +219,91 @@ select:focus-visible {
   width: 100%;
   margin-top: 12px;
   padding: 10px;
-  border: 1px solid #dde4d9;
-  background: #f7f9f5;
+  border: 1px solid var(--line);
+  background: var(--field);
   border-radius: 12px;
   font-size: 0.95rem;
   color: inherit;
   cursor: pointer;
+}
+.install {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  background: var(--chip);
+  border-color: var(--line);
+}
+.install-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+.install-btn {
+  background: #2f7d4f;
+  color: #fff;
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.theme-btn {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+.theme-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink);
+}
+.theme-icon {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: rotate(-40deg);
+}
+.theme-icon.is-sun {
+  transform: rotate(0deg);
+}
+.sun-core {
+  transform-origin: 12px 12px;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.is-sun .sun-core {
+  transform: scale(0.6);
+}
+.moon-cut {
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.is-sun .moon-cut {
+  transform: translate(14px, -14px);
+}
+.sun-rays {
+  transform-origin: 12px 12px;
+  opacity: 0;
+  transform: scale(0.4) rotate(-60deg);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.4s;
+}
+.is-sun .sun-rays {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+.theme-btn:active {
+  transform: scale(0.92);
+}
+@media (prefers-reduced-motion: reduce) {
+  .theme-icon, .sun-core, .moon-cut, .sun-rays {
+    transition: none;
+  }
 }
