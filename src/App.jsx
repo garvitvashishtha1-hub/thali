@@ -219,18 +219,12 @@ export default function App() {
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
   const [ready, setReady] = useState(false);
   const [welcomed, setWelcomed] = useState(() => load("thali-welcomed", false));
-  const [showSplash, setShowSplash] = useState(() => {
-    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const last = load("thali-splash", 0);
-    return !calm && Date.now() - last > 30 * 60 * 1000;
-  });
+  const [showSplash, setShowSplash] = useState(
+    () => !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
 
   useEffect(() => {
-    if (showSplash) {
-      save("thali-splash", Date.now());
-      return;
-    }
-    if (!welcomed) return;
+    if (showSplash || !welcomed) return;
     const id = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(id);
   }, [showSplash, welcomed]);
