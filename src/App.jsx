@@ -46,6 +46,41 @@ function dailyMessage(protein, target, hasLog) {
   return "Just getting started. Dal, paneer or soya at your next meal will help.";
 }
 
+function Splash({ onDone }) {
+  const [leaving, setLeaving] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setLeaving(true), 2000);
+    const t2 = setTimeout(() => onDone(false), 2500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [onDone]);
+
+  function skip() {
+    setLeaving(true);
+    setTimeout(() => onDone(false), 350);
+  }
+
+  return (
+    <div
+      className={"splash" + (leaving ? " leave" : "")}
+      onClick={skip}
+      role="button"
+      tabIndex={0}
+      aria-label="Skip intro"
+    >
+      <svg className="splash-ring" width="120" height="120" viewBox="0 0 132 132">
+        <circle cx="66" cy="66" r="56" className="splash-track" />
+        <circle cx="66" cy="66" r="56" className="splash-arc" />
+      </svg>
+      <h1 className="splash-name">Thali</h1>
+      <p className="splash-tag">Protein and calories for home-cooked veg food.</p>
+    </div>
+  );
+}
+
 function ThemeIcon({ sun }) {
   return (
     <svg
@@ -85,11 +120,20 @@ export default function App() {
   const [limit, setLimit] = useState(12);
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
   const [ready, setReady] = useState(false);
+  const [showSplash, setShowSplash] = useState(() => {
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const last = load("thali-splash", 0);
+    return !calm && Date.now() - last > 30 * 60 * 1000;
+  });
 
   useEffect(() => {
+    if (showSplash) {
+      save("thali-splash", Date.now());
+      return;
+    }
     const id = setTimeout(() => setReady(true), 350);
     return () => clearTimeout(id);
-  }, []);
+  }, [showSplash]);
   const [installEvt, setInstallEvt] = useState(null);
   const [installed, setInstalled] = useState(
     () =>
@@ -188,6 +232,8 @@ export default function App() {
     .filter((f) => f.protein >= 5)
     .sort((a, b) => b.protein / b.kcal - a.protein / a.kcal)
     .slice(0, 5);
+
+  if (showSplash) return <Splash onDone={setShowSplash} />;
 
   return (
     <main className="app">
