@@ -307,3 +307,81 @@ select:focus-visible {
     transition: none;
   }
 }
+
+/* ---------- Motion ---------- */
+@keyframes rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.head, .app > p {
+  animation: fadeIn 0.5s ease both;
+}
+.app > .card {
+  animation: rise 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.app > .card:nth-of-type(1) { animation-delay: 0.05s; }
+.app > .card:nth-of-type(2) { animation-delay: 0.12s; }
+.app > .card:nth-of-type(3) { animation-delay: 0.19s; }
+.app > .card:nth-of-type(4) { animation-delay: 0.26s; }
+.app > .card:nth-of-type(n + 5) { animation-delay: 0.32s; }
+.food {
+  animation: fadeIn 0.3s ease both;
+}
+.ring-fill {
+  transition: stroke-dashoffset 1s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+body, .card, .chip, .search, .grid input, .grid select, .more, .install,
+.theme-btn, .stepper button, .add, .food {
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s,
+    transform 0.15s;
+}
+.chip:active, .add:active, .more:active, .install-btn:active,
+.stepper button:active {
+  transform: scale(0.94);
+}
+.chip:hover, .more:hover, .stepper button:hover {
+  border-color: var(--leaf);
+}
+.add:hover {
+  background: var(--leaf);
+  color: var(--card);
+}
+@media (prefers-reduced-motion: reduce) {
+  .head, .app > p, .app > .card, .food {
+    animation: none;
+  }
+  .ring-fill {
+    transition: none;
+  }
+}
+
+/* ---------- Greeting ---------- */
+.hello {
+  margin: 2px 0 16px;
+  animation: fadeIn 0.5s ease both;
+}
+.date {
+  margin: 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.greet {
+  margin: 2px 0 4px;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.tip {
+  margin: 0;
+  color: var(--mute);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hello {
+    animation: none;
+  }
+}

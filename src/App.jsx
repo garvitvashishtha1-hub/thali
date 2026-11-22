@@ -31,6 +31,21 @@ function calcTargets(weight, goal) {
   };
 }
 
+function greetingFor(hour) {
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function dailyMessage(protein, target, hasLog) {
+  if (!hasLog) return `Aim for ${target} g of protein today. Log your first meal to begin.`;
+  const p = protein / (target || 1);
+  if (p >= 1) return "Protein target done. Great job today.";
+  if (p >= 0.7) return "Almost there. A katori of dahi or a handful of roasted chana can close the gap.";
+  if (p >= 0.3) return "Good progress. Keep a protein source in every meal.";
+  return "Just getting started. Dal, paneer or soya at your next meal will help.";
+}
+
 function ThemeIcon({ sun }) {
   return (
     <svg
@@ -69,6 +84,12 @@ export default function App() {
   const [cat, setCat] = useState("All");
   const [limit, setLimit] = useState(12);
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const id = setTimeout(() => setReady(true), 350);
+    return () => clearTimeout(id);
+  }, []);
   const [installEvt, setInstallEvt] = useState(null);
   const [installed, setInstalled] = useState(
     () =>
@@ -180,7 +201,13 @@ export default function App() {
           <ThemeIcon sun={isDark} />
         </button>
       </div>
-      <p>Protein and calories for home-cooked veg food.</p>
+      <div className="hello">
+        <p className="date">
+          {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}
+        </p>
+        <h2 className="greet">{greetingFor(new Date().getHours())}</h2>
+        <p className="tip">{dailyMessage(protein, profile.protein, log.length > 0)}</p>
+      </div>
 
       {!installed && !hideInstall && (installEvt || isIOS) && (
         <section className="card install">
@@ -211,7 +238,7 @@ export default function App() {
               cx="66" cy="66" r={R}
               className="ring-fill"
               strokeDasharray={C}
-              strokeDashoffset={C * (1 - pct)}
+              strokeDashoffset={C * (1 - (ready ? pct : 0))}
             />
           </svg>
           <div className="ring-text">
