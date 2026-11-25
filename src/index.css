@@ -561,3 +561,80 @@ body, .card, .chip, .search, .grid input, .grid select, .more, .install,
 }
 .own-form input { background: var(--card); }
 .own-form .note { margin: 0; }
+
+/* ---------- Weekly history ---------- */
+@keyframes grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.chart {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  margin-top: 14px;
+}
+.col {
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+}
+.wv {
+  font-size: 0.68rem;
+  color: var(--mute);
+  margin-bottom: 3px;
+  min-height: 12px;
+}
+.wbar {
+  width: 70%;
+  max-width: 30px;
+  min-height: 3px;
+  border-radius: 8px 8px 4px 4px;
+  background: var(--prot);
+  opacity: 0.45;
+  transform-origin: bottom;
+  animation: grow 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+.wbar.hit { background: var(--leaf); opacity: 1; }
+.wbar.today { opacity: 1; }
+.tline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1px dashed var(--mute);
+  pointer-events: none;
+}
+.tline span {
+  position: absolute;
+  right: 0;
+  top: -15px;
+  font-size: 0.66rem;
+  color: var(--mute);
+}
+.labels {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.wl {
+  flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--mute);
+}
+.wl.today { color: var(--ink); font-weight: 700; }
+.streak {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  background: var(--chip);
+  color: var(--leaf);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+@media (prefers-reduced-motion: reduce) { .wbar { animation: none; } }

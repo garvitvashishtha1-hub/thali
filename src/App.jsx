@@ -5,6 +5,38 @@ const MEALS = ["Breakfast", "Lunch", "Snack", "Dinner"];
 const EMPTY_DRAFT = { name: "", serving: "1 katori", kcal: "", protein: "", carbs: "", fat: "" };
 const today = () => new Date().toDateString();
 const r1 = (x) => Math.round(x * 10) / 10;
+const keyOf = (d) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+function totalsOf(items, target) {
+  return {
+    protein: r1(items.reduce((t, i) => t + i.protein * i.qty, 0)),
+    kcal: Math.round(items.reduce((t, i) => t + i.kcal * i.qty, 0)),
+    target,
+  };
+}
+
+// A day counts as a hit when protein reaches 90% of that day's target.
+function calcStreak(history, liveProtein, liveTarget) {
+  const hit = (d, i) => {
+    if (i === 0) return liveTarget > 0 && liveProtein >= 0.9 * liveTarget;
+    const e = history[keyOf(d)];
+    return !!e && e.target > 0 && e.protein >= 0.9 * e.target;
+  };
+  const d = new Date();
+  let i = 0;
+  let streak = 0;
+  if (!hit(d, 0)) {
+    d.setDate(d.getDate() - 1);
+    i = 1;
+  }
+  while (i < 400 && hit(d, i)) {
+    streak++;
+    d.setDate(d.getDate() - 1);
+    i++;
+  }
+  return streak;
+}
 
 function load(key, fallback) {
   try {
@@ -219,6 +251,18 @@ export default function App() {
   const [limit, setLimit] = useState(12);
   const [theme, setTheme] = useState(() => load("thali-theme", "auto"));
   const [custom, setCustom] = useState(() => load("thali-custom", []));
+  const [history, setHistory] = useState(() => {
+    const h = { ...load("thali-history", {}) };
+    // Keep yesterday's log from before history existed.
+    const s = load("thali-log", null);
+    if (s && s.day && s.day !== today() && Array.isArray(s.items) && s.items.length) {
+      const d = new Date(s.day);
+      if (!isNaN(d) && !h[keyOf(d)]) {
+        h[keyOf(d)] = totalsOf(s.items, load("thali-profile", {}).protein || 72);
+      }
+    }
+    return h;
+  });
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [formError, setFormError] = useState("");
@@ -245,6 +289,18 @@ export default function App() {
   useEffect(() => save("thali-profile", profile), [profile]);
   useEffect(() => save("thali-log", { day: today(), items: log }), [log]);
   useEffect(() => save("thali-custom", custom), [custom]);
+
+  useEffect(() => {
+    setHistory((prev) => {
+      const k = keyOf(new Date());
+      if (log.length === 0 && !prev[k]) return prev;
+      const next = { ...prev, [k]: totalsOf(log, profile.protein) };
+      const keys = Object.keys(next).sort();
+      while (keys.length > 120) delete next[keys.shift()];
+      return next;
+    });
+  }, [log, profile.protein]);
+  useEffect(() => save("thali-history", history), [history]);
 
   useEffect(() => {
     const onPrompt = (e) => {
@@ -374,6 +430,26 @@ export default function App() {
     .sort((a, b) => b.protein / b.kcal - a.protein / a.kcal)
     .slice(0, 5);
 
+  const week = [6, 5, 4, 3, 2, 1, 0].map((ago) => {
+    const d = new Date();
+    d.setDate(d.getDate() - ago);
+    const e = history[keyOf(d)];
+    return {
+      key: keyOf(d),
+      label: d.toLocaleDateString("en-IN", { weekday: "short" }).slice(0, 3),
+      today: ago === 0,
+      protein: ago === 0 ? protein : e ? e.protein : 0,
+      target: ago === 0 ? profile.protein : e ? e.target : profile.protein,
+    };
+  });
+  const logged = week.filter((w) => w.protein > 0);
+  const hits = logged.filter((w) => w.target > 0 && w.protein >= 0.9 * w.target).length;
+  const avg = logged.length
+    ? Math.round(logged.reduce((t, w) => t + w.protein, 0) / logged.length)
+    : 0;
+  const scaleMax = Math.max(profile.protein, ...week.map((w) => w.protein), 1) * 1.3;
+  const streak = calcStreak(history, protein, profile.protein);
+
   if (showSplash) return <Splash onDone={setShowSplash} />;
 
   if (!welcomed)
@@ -501,6 +577,44 @@ export default function App() {
             </div>
           );
         })}
+      </section>
+
+      <section className="card">
+        <h2>Your week</h2>
+        <p className="hint">
+          {logged.length === 0
+            ? "Log your meals and your week will build up here."
+            : `Average ${avg} g protein on the days you logged. On target ${hits} of ${logged.length} days.`}
+        </p>
+        {streak > 0 && <span className="streak">{streak}-day streak</span>}
+        <div
+          className="chart"
+          role="img"
+          aria-label={`Protein for the last 7 days. Average ${avg} grams. On target ${hits} of ${logged.length} logged days.`}
+        >
+          <div className="tline" style={{ bottom: `${(profile.protein / scaleMax) * 100}%` }}>
+            <span>target</span>
+          </div>
+          {week.map((w) => (
+            <div className="col" key={w.key} aria-hidden="true">
+              <span className="wv">{w.protein > 0 ? Math.round(w.protein) : ""}</span>
+              <div
+                className={
+                  "wbar" +
+                  (w.target > 0 && w.protein >= 0.9 * w.target ? " hit" : "") +
+                  (w.today ? " today" : "")
+                }
+                style={{ height: `${(w.protein / scaleMax) * 100}%` }}
+              />
+            </div>
+          ))}
+        </div>
+        <div className="labels" aria-hidden="true">
+          {week.map((w) => (
+            <span key={w.key} className={"wl" + (w.today ? " today" : "")}>{w.label}</span>
+          ))}
+        </div>
+        <p className="note">A day counts when you reach 90% of your protein target.</p>
       </section>
 
       <section className="card">
