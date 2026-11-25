@@ -638,3 +638,23 @@ body, .card, .chip, .search, .grid input, .grid select, .more, .install,
   font-weight: 600;
 }
 @media (prefers-reduced-motion: reduce) { .wbar { animation: none; } }
+
+/* ---------- Backup and restore ---------- */
+.data-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+.ghost-btn {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  border-radius: 14px;
+  padding: 12px 20px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.ghost-btn:hover { border-color: var(--leaf); }
+.ghost-btn:active { transform: scale(0.95); }

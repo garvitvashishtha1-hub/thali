@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { foods, categories } from "./foods";
 
 const MEALS = ["Breakfast", "Lunch", "Snack", "Dinner"];
@@ -77,6 +77,55 @@ function dailyMessage(protein, target, hasLog) {
   if (p >= 0.7) return "Almost there. A katori of dahi or a handful of roasted chana can close the gap.";
   if (p >= 0.3) return "Good progress. Keep a protein source in every meal.";
   return "Just getting started. Dal, paneer or soya at your next meal will help.";
+}
+
+const BACKUP_KEYS = [
+  "thali-profile", "thali-log", "thali-history", "thali-custom",
+  "thali-theme", "thali-welcomed", "thali-hide-install",
+];
+const num = Number.isFinite;
+
+function collectBackup() {
+  const data = {};
+  for (const key of BACKUP_KEYS) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw !== null) data[key] = JSON.parse(raw);
+    } catch {
+      /* skip unreadable entry */
+    }
+  }
+  return { app: "thali", version: 1, exportedAt: new Date().toISOString(), data };
+}
+
+function validBackup(b) {
+  if (!b || b.app !== "thali" || !b.data || typeof b.data !== "object") return false;
+  const d = b.data;
+  const okItem = (i) => i && typeof i.name === "string" && num(i.kcal) && num(i.protein);
+  if ("thali-profile" in d) {
+    const p = d["thali-profile"];
+    if (!p || typeof p !== "object" || !num(p.protein) || !num(p.kcal) || !num(p.weight)) return false;
+  }
+  if ("thali-custom" in d && !(Array.isArray(d["thali-custom"]) && d["thali-custom"].every(okItem))) return false;
+  if ("thali-log" in d && d["thali-log"] !== null) {
+    const l = d["thali-log"];
+    if (!Array.isArray(l.items) || !l.items.every((i) => okItem(i) && num(i.qty))) return false;
+  }
+  if ("thali-history" in d) {
+    const h = d["thali-history"];
+    if (!h || typeof h !== "object" || Array.isArray(h)) return false;
+    if (!Object.values(h).every((e) => e && num(e.protein) && num(e.target))) return false;
+  }
+  return true;
+}
+
+function applyBackup(b) {
+  for (const key of BACKUP_KEYS) {
+    try { localStorage.removeItem(key); } catch { /* ignore */ }
+  }
+  for (const [key, value] of Object.entries(b.data)) {
+    if (BACKUP_KEYS.includes(key)) save(key, value);
+  }
 }
 
 const GOALS = [
@@ -264,6 +313,9 @@ export default function App() {
     return h;
   });
   const [adding, setAdding] = useState(false);
+  const [backupMsg, setBackupMsg] = useState("");
+  const [lastBackup, setLastBackup] = useState(() => load("thali-last-backup", null));
+  const fileRef = useRef(null);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [formError, setFormError] = useState("");
   const [ready, setReady] = useState(false);
@@ -334,6 +386,55 @@ export default function App() {
   const isDark =
     theme === "dark" ||
     (theme === "auto" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+  async function downloadBackup() {
+    const payload = JSON.stringify(collectBackup(), null, 2);
+    const name = `thali-backup-${keyOf(new Date())}.json`;
+    try {
+      const file = new File([payload], name, { type: "application/json" });
+      const touch = window.matchMedia("(pointer: coarse)").matches;
+      if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: "Thali backup" });
+      } else {
+        const url = URL.createObjectURL(file);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = name;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+      const now = Date.now();
+      save("thali-last-backup", now);
+      setLastBackup(now);
+      setBackupMsg("Backup ready. Keep the file somewhere safe, like Google Drive or a chat with yourself.");
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+      setBackupMsg("Could not create the backup. Please try again.");
+    }
+  }
+
+  async function restoreBackup(e) {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    try {
+      const b = JSON.parse(await file.text());
+      if (!validBackup(b)) {
+        setBackupMsg("That file isn't a valid Thali backup.");
+        return;
+      }
+      const when = b.exportedAt
+        ? new Date(b.exportedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })
+        : "an unknown date";
+      if (!window.confirm(`Replace everything on this device with the backup from ${when}? This can't be undone.`)) return;
+      applyBackup(b);
+      window.location.reload();
+    } catch {
+      setBackupMsg("Could not read that file. Please choose a Thali backup (.json).");
+    }
+  }
 
   const allFoods = [...custom, ...foods];
   const setD = (key) => (e) => setDraft({ ...draft, [key]: e.target.value });
@@ -767,6 +868,27 @@ export default function App() {
         <p className="note">
           Values are typical home-cooked estimates and vary with oil and recipe.
           This is a general guide, not medical advice.
+        </p>
+      </section>
+
+      <section className="card">
+        <h2>Your data</h2>
+        <p className="hint">
+          Everything is stored on this phone only. Save a backup file to move to a new
+          phone or to recover your log.
+        </p>
+        <div className="data-actions">
+          <button className="w-next" onClick={downloadBackup}>Save backup</button>
+          <button className="ghost-btn" onClick={() => fileRef.current && fileRef.current.click()}>
+            Restore backup
+          </button>
+          <input ref={fileRef} hidden type="file" accept=".json,application/json" onChange={restoreBackup} />
+        </div>
+        <p className="note" aria-live="polite">
+          {backupMsg ||
+            (lastBackup
+              ? `Last backup: ${new Date(lastBackup).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              : "No backup yet.")}
         </p>
       </section>
     </main>
